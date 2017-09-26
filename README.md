@@ -1,5 +1,7 @@
 ## mocha中文文档
 
+> 这个是对[mocha](https://mochajs.org/)文档的翻译，都是我一个字一个字敲出来的。水平有限，激情无限，欢迎大家批评指正。
+
 ### 安装
 使用[npm](https://npmjs.org/)全局安装：
 
@@ -705,3 +707,368 @@ describe('app', function() {
 });
 ```
 当我们使用`--grep api`或者`--grep app`只能运行其中一个对应的测试。
+
+### INTERFACES
+
+mocha的测绘接口类型指的是集中测试用例组织模式的选择。Mocha提供了**BDD**,**TDD**,**Exports**,**QUnit**和**Require-style**几种接口。
+
+BDD
+--
+BDD测试提供了describe()，context()，it()，specify()，before()，after()，beforeEach()和afterEach()这几种函数。
+
+context()是describe()的别名，二者的用法是一样的。最大的作用就是让测试的可读性更好，组织的更好。相似地，specify()是it()的别名。
+
+> 上面的所有测试都是用BDD风格的接口写的。
+
+```javascript
+describe('Array', function() {
+    before(function() {
+      // ...
+    });
+
+    describe('#indexOf()', function() {
+      context('when not present', function() {
+        it('should not throw an error', function() {
+          (function() {
+            [1,2,3].indexOf(4);
+          }).should.not.throw();
+        });
+        it('should return -1', function() {
+          [1,2,3].indexOf(4).should.equal(-1);
+        });
+      });
+      context('when present', function() {
+        it('should return the index where the element first appears in the array', function() {
+          [1,2,3].indexOf(3).should.equal(2);
+        });
+      });
+    });
+  });
+```
+
+TDD
+--
+TDD风格的测试提供了suite(), test(), suiteSetup(), suiteTeardown(), setup(), 和 teardown()这几个函数:
+
+```javascript
+suite('Array', function() {
+  setup(function() {
+    // ...
+  });
+
+  suite('#indexOf()', function() {
+    test('should return -1 when not present', function() {
+      assert.equal(-1, [1,2,3].indexOf(4));
+    });
+  });
+});
+```
+Exports
+--
+Exports 的写法有的类似于Mocha的前身[expresso](https://github.com/tj/expresso)，键 before, after, beforeEach, 和afterEach都具有特殊的含义。对象值对应的是测试集合，函数值对应的是测试用例。
+
+```javascript
+module.exports = {
+  before: function() {
+    // ...
+  },
+
+  'Array': {
+    '#indexOf()': {
+      'should return -1 when not present': function() {
+        [1,2,3].indexOf(4).should.equal(-1);
+      }
+    }
+  }
+};
+```
+QUNIT
+--
+QUNIT风格的测试像TDD接口一样支持suite和test函数，同时又像BDD一样支持before(), after(), beforeEach(), 和 afterEach()等钩子函数。
+
+```javascript
+function ok(expr, msg) {
+  if (!expr) throw new Error(msg);
+}
+
+suite('Array');
+
+test('#length', function() {
+  var arr = [1,2,3];
+  ok(arr.length == 3);
+});
+
+test('#indexOf()', function() {
+  var arr = [1,2,3];
+  ok(arr.indexOf(1) == 0);
+  ok(arr.indexOf(2) == 1);
+  ok(arr.indexOf(3) == 2);
+});
+
+suite('String');
+
+test('#length', function() {
+  ok('foo'.length == 3);
+});
+```
+REQUIRE
+--
+require可以使用require方法引入describe函数，同时，你可以为其设置一个别名。如果你不想再测试中出现全局变量，这个方法也是十分实用的。
+
+**注意**：这种风格的测试不能通过node命令来直接运行，因为，这里的require()方法node是不能够解析的，我们必须通过mocha来运行测试。
+
+```javascript
+var testCase = require('mocha').describe;
+var pre = require('mocha').before;
+var assertions = require('mocha').it;
+var assert = require('chai').assert;
+
+testCase('Array', function() {
+  pre(function() {
+    // ...
+  });
+
+  testCase('#indexOf()', function() {
+    assertions('should return -1 when not present', function() {
+      assert.equal([1,2,3].indexOf(4), -1);
+    });
+  });
+});
+```
+### REPORTERS
+
+Mocha报告会自适应终端窗口，如果终端类型非TTY类型，会禁用ANSI-escape颜色。
+
+SPEC
+--
+这是默认的测试报告，输出的格式是一个嵌套的分级视图。
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjvqg1kv9tj30hs0aut8k.jpg)
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjvqkyhux5j30hs0au747.jpg)
+
+DOT MATRIX
+--
+dot matrix视图报告使用一系列的字符来表示报告的结果，失败的测试使用红色的`!`来表示，pending测试使用蓝色的`,`来表示。慢的测试用黄色的`.`来表示。这个终端输出的内容最少。
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjvqrvh6oxj30k505q3yl.jpg)
+
+NYAN
+--
+"nyan"报告就是你所期望的那样（谜一样的解释）：
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjvrrojinlj30kp0d50ss.jpg)
+
+TAP
+--
+The TAP reporter emits lines for a [Test-Anything-Protocol](http://en.wikipedia.org/wiki/Test_Anything_Protocol) consumer.
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjvrur5zvoj30i70bgdfp.jpg)
+
+LANDING STRIP
+--
+
+landing strip飞机降落的跑道，测试报告就是像一架飞机轨道一样的视图。
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjvrxiu2z4j30hs0au3yc.jpg)
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjvrxrsnfbj30hs0audfq.jpg)
+
+LIST
+--
+"list"报告就是简单的输出一个列表来显示每个测试用例是否通过或失败，对于失败的测试用例，会在下面输出详细的信息。
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjwvh4zvmdj30hs0auwec.jpg)
+
+PROGRESS
+--
+"progress"报告就是一个包含进度条的视图。
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjwvimmxk2j30i70bgt8k.jpg)
+
+JSON
+--
+json视图会输出一个json对象作为结果
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjwvjr40d5j30hs0aujra.jpg)
+
+JSON STREAM
+--
+输出的也是一个json，不同测试用例以换行符进行分割。
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjwvlc6ftpj30hs0aut8l.jpg)
+
+MIN
+--
+这个报告只显示测试的整体情况，但是仍然会输出错误和失败的情况。和--watch选项结合使用最好。
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjwvnijp08j30kx0dc3yk.jpg)
+
+DOC
+--
+生成一个只包含html的body内容的测试报告。
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjwvp21ijsj30hs0aujra.jpg)
+
+
+例如，假设你有下面的javascript代码：
+
+```javascript
+describe('Array', function() {
+  describe('#indexOf()', function() {
+    it('should return -1 when the value is not present', function() {
+      [1,2,3].indexOf(5).should.equal(-1);
+      [1,2,3].indexOf(0).should.equal(-1);
+    });
+  });
+});
+```
+
+通过`mocha --reporter doc array`会生成如下的报告：
+
+```html
+<section class="suite">
+  <h1>Array</h1>
+  <dl>
+    <section class="suite">
+      <h1>#indexOf()</h1>
+      <dl>
+      <dt>should return -1 when the value is not present</dt>
+      <dd><pre><code>[1,2,3].indexOf(5).should.equal(-1);
+[1,2,3].indexOf(0).should.equal(-1);</code></pre></dd>
+      </dl>
+    </section>
+  </dl>
+</section>
+```
+
+MARKDOWN
+--
+
+"markdown"格式的报告会给你的测试用例生成一个markdown内容。如果你想使用github wiki或者生成一个github能够渲染的markdown文件，这种格式十分有用。这有一个例子[test output](https://github.com/senchalabs/connect/blob/90a725343c2945aaee637e799b1cd11e065b2bff/tests.md)
+
+HTML
+--
+只有在浏览器中使用Mocha的时候才能生成这种报告。
+
+![](http://ww1.sinaimg.cn/large/006FmM8yly1fjwvxsr713j30j80fudg0.jpg)
+
+UNDOCUMENTED REPORTERS
+--
+
+"XUnit"类型的报告也是可以使用的。默认情况下，只会在console控制台中输出。为了将报告写入一个文件中，使用`--reporter-options output=filename.xml`
+
+THIRD PARTY REPORTERS
+--
+Mocha也可以使用第三方报告生成器，具体的件[文档](https://github.com/mochajs/mocha/wiki/Third-party-reporters)
+
+### RUNNING MOCHA IN THE BROWSER
+
+Mocha可以在浏览器中使用。每次Mocha发版，都会生成一个新的./mocha.js和./mocha.css文件，以便在浏览器中使用。
+
+BROWSER-SPECIFIC METHODS
+--
+
+下面的方法只能在浏览器中使用。
+
+`mocha.allowUncaught()`：未捕获的错误不会被抛出。
+
+下面是一个典型的例子。在加载测试脚本之前，使用mocha.setup('bdd')函数把测试模式设置为BDD接口，测试脚本加载完之后用mocha.run()函数来运行测试。
+
+```html
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mocha Tests</title>
+  <link href="https://cdn.rawgit.com/mochajs/mocha/2.2.5/mocha.css" rel="stylesheet" />
+</head>
+<body>
+  <div id="mocha"></div>
+
+  <script src="https://cdn.rawgit.com/jquery/jquery/2.1.4/dist/jquery.min.js"></script>
+  <script src="https://cdn.rawgit.com/Automattic/expect.js/0.3.1/index.js"></script>
+  <script src="https://cdn.rawgit.com/mochajs/mocha/2.2.5/mocha.js"></script>
+
+  <script>mocha.setup('bdd')</script>
+  <script src="test.array.js"></script>
+  <script src="test.object.js"></script>
+  <script src="test.xhr.js"></script>
+  <script>
+    mocha.checkLeaks();
+    mocha.globals(['jQuery']);
+    mocha.run();
+  </script>
+</body>
+</html>
+```
+
+GREP
+--
+浏览器中可以通过在url后边加?grep=api参数，来使用grep命令。
+
+BROWSER CONFIGURATION
+--
+可以通过mocha.setup()方法来设置配置:
+
+```javascript
+// Use "tdd" interface.  This is a shortcut to setting the interface;
+// any other options must be passed via an object.
+mocha.setup('tdd');
+
+// This is equivalent to the above.
+mocha.setup({
+  ui: 'tdd'
+});
+
+// Use "tdd" interface, ignore leaks, and force all tests to be asynchronous
+mocha.setup({
+  ui: 'tdd',
+  ignoreLeaks: true,
+  asyncOnly: true
+});
+```
+
+BROWSER-SPECIFIC OPTION(S)
+--
+下面的选项只能在浏览器中使用。
+
+`noHighlighting`：如果为true，在输出结果中语法不会高亮。
+
+MOCHA.OPTS
+--
+
+在服务端运行的时候，mocha会去加载test目录下的mocha.opts文件，来读取mocha配置项。这个配置文件中的每一行代表一项配置。如果运行mocha命令的时候，带上的配置参数与这个配置文件中的配置冲突的话，以命令中的为准。
+
+假设你有如下的mocha.opt文件：
+
+```bash
+-- require should
+-- reporter dot
+-- ui bdd
+```
+上面的配置就会让mocha 引入一下should模块、报告样式设置为dot，并且使用bdd的测试接口。在这个基础上，运行mocha的时候也可以添加一些额外的参数，比如添加`--Growl`选项同时更改报告样式为list风格：
+
+```bash
+$ mocha --reporter list --growl
+```
+
+### THE TEST/ DIRECTORY
+
+默认情况下，Mocha会搜索`./test/*.js`和`./test/*.coffee`，所以，你可以把你的测试放在`test/`文件夹下面。
+
+
+### EXAMPLES
+
+* [Express](https://github.com/visionmedia/express/tree/master/test)
+* [Connect](https://github.com/senchalabs/connect/tree/master/test)
+* [SuperAgent](https://github.com/visionmedia/superagent/tree/master/test/node)
+* [WebSocket.io](https://github.com/LearnBoost/websocket.io/tree/master/test)
+* [Mocha](https://github.com/mochajs/mocha/tree/master/test)
+
+### TESTING MOCHA
+
+```bash
+$ cd /path/to/mocha
+$ npm install
+$ npm test
+```
